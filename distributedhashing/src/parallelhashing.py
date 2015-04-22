@@ -3,12 +3,15 @@
 # and open the template in the editor.
 from itertools import product
 from hashlib import md5
-from multiprocessing import Process
+from multiprocessing import Process, Value
+import socket
+import sys
 
 __author__="Brandon"
 __date__ ="$Apr 15, 2015 3:40:20 PM$"
 
-def doit(start, end, hash):
+
+def doit(start, end, hash, num):
 #    print start
 #    print end
     counter = 0
@@ -25,22 +28,43 @@ def doit(start, end, hash):
 #    print charlist
     for c in product(startlist, charlist, charlist, charlist, charlist, charlist):
         s=''.join(c)
-        if(counter % 10000 == 0 and s[0]=='s'):
-            print str(counter) + " " + s
+        #if(counter % 100000 == 0):
+        #    print str(counter) + " " + s
         counter+=1
+        if(num.value == 1):
+            break
         temp = md5(s).hexdigest()
         if temp in hash:
+            num.value=1
             print "Found",s
             return s
+
             
 def main():
-    hash = "54d0b65dbce1bcae13e1329438d021bf"
+    sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    server_address = ('localhost', 10000)
+    sock.connect(server_address)
+    hash = sock.recv
+    print hash
+    counter = 0
+    num = Value('i', 0)
+    print"Starting..."
+    #hash = "0b4e7a0e5fe84ad35fb5f95b9ceeac79" #aaaaaa
+    #hash = "54d0b65dbce1bcae13e1329438d021bf" #sixsix
     threads = []
-    for i in range(0,8):
-        threads.append( Process(target=doit, args=(i*4,i*4+4,hash,)) )
+    for i in range(0,7):
+        threads.append( Process(target=doit, args=(i*4,i*4+4,hash,num)) )
+        threads[i]
         threads[i].start()
-    for i in range(0,8):
+    for i in range(0,7):
         threads[i].join()
+        
+    while(num.value == 0):
+        counter = 0
+    
+#    print "Killing threads"
+#    for i in range(0,7):
+#        threads[i].terminate()
 
 if __name__ == "__main__":
     main()
