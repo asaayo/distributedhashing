@@ -6,6 +6,7 @@ from hashlib import md5
 from multiprocessing import Process, Value
 import socket
 import sys
+import time
 
 __author__="Brandon"
 __date__ ="$Apr 15, 2015 3:40:20 PM$"
@@ -37,14 +38,29 @@ def doit(start, end, hash, num):
         if temp in hash:
             num.value=1
             print "Found",s
+            two = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            server_address=('localhost',13337)
+            #two.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+            two.connect(server_address)
+            response = "Solved, hash is: \t" + str(s)
+            try:
+                two.sendall(response)
+            finally:
+                two.close()
             return s
 
             
 def main():
     sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server_address = ('localhost', 10000)
+    #sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+    server_address = ('localhost', 13337)
     sock.connect(server_address)
-    hash = sock.recv
+    try:
+        sock.sendall("Ready")
+        hash = sock.recv(1024)
+    finally:
+        sock.shutdown(1)
+        sock.close()
     print hash
     counter = 0
     num = Value('i', 0)
@@ -56,11 +72,28 @@ def main():
         threads.append( Process(target=doit, args=(i*4,i*4+4,hash,num)) )
         threads[i]
         threads[i].start()
-    for i in range(0,7):
-        threads[i].join()
         
-    while(num.value == 0):
-        counter = 0
+    #timeout/exit loop
+    while num.value==0:
+        time.sleep(5)
+        sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+        #sock.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        server_address = ('localhost', 13337)
+        sock.connect(server_address)
+        try:
+            sock.sendall("status")
+            status = sock.recv(1024)
+            if "solved" in status :
+                num.value=1
+        finally:
+            sock.shutdown(1)
+            sock.close
+        
+#    for i in range(0,7):
+#        threads[i].join()
+        
+#    while(num.value == 0):
+#        counter = 0
     
 #    print "Killing threads"
 #    for i in range(0,7):
