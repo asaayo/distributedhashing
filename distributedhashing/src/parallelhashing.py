@@ -13,9 +13,9 @@ __date__ ="$Apr 15, 2015 3:40:20 PM$"
 
 
 def doit(start, end, hash, num):
-#    print start
-#    print end
-    counter = 0
+    print start
+    print end
+#    counter = 0
     startlist = []
     charlist = []
     #build a list of the lower case characters so I don't have to type them
@@ -31,7 +31,7 @@ def doit(start, end, hash, num):
         s=''.join(c)
         #if(counter % 100000 == 0):
         #    print str(counter) + " " + s
-        counter+=1
+        #counter+=1
         if(num.value == 1):
             break
         temp = md5(s).hexdigest()
@@ -57,21 +57,28 @@ def main():
     sock.connect(server_address)
     try:
         sock.sendall("Ready")
-        hash = sock.recv(1024)
+        temp = sock.recv(1024)
     finally:
         sock.shutdown(1)
         sock.close()
-    print hash
+    print temp
     counter = 0
     num = Value('i', 0)
     print"Starting..."
+    loc = temp.find(':')
+    hash = str(temp[:loc])
+    print hash
+    targetrange = temp[loc+1:]
+    separator = temp.find('-')
+    start = int(temp[loc+1:separator-2])
+    end = int(temp[separator:])
+    print targetrange
     #hash = "0b4e7a0e5fe84ad35fb5f95b9ceeac79" #aaaaaa
     #hash = "54d0b65dbce1bcae13e1329438d021bf" #sixsix
-    threads = []
-    for i in range(0,7):
-        threads.append( Process(target=doit, args=(i*4,i*4+4,hash,num)) )
-        threads[i]
-        threads[i].start()
+    processes = []
+    for i in range(0,2):
+        processes.append( Process(target=doit, args=(start+(i*7), start+(i*7)+7,hash,num)) )
+        processes[i].start()
         
     #timeout/exit loop
     while num.value==0:
